@@ -1,0 +1,31 @@
+import React,{useState} from 'react';
+
+export const podsDefault={name:'Hydroid Pods',label:'HYDROID ACCESSORIES',image:'/assets/hydroid-pods.webp',alt:'Clear Hydroid pod with silver cap',price:'₹299',finish:'Clear',description:'Choose a single pod or a multipack. Product contents and compatibility details will be confirmed before checkout opens.',packs:[{label:'1 pod',quantity:1,price:'₹299'},{label:'4 pods',quantity:4,price:'₹599'},{label:'7 pods',quantity:7,price:'₹999'}]};
+export const money=value=>{const number=Number(String(value??'').replace(/[^\d.]/g,''));return Number.isFinite(number)?number:0};
+export const itemKey=(item,index)=>item.isPod?'pods':`bottle-${index}`;
+export function shopItems(bottles,pods){return [...bottles.map((item,index)=>({...item,id:itemKey(item,index),kind:'Bottle'})),{...pods,id:'pods',isPod:true,kind:'Accessory'}]}
+
+function ProductVisual({item,mode='card'}){
+ return <div className={`shop-visual shop-visual-${mode} ${item.isPod?'is-pod':''}`}><span className="shop-visual-orbit"/><img src={item.image} alt={item.alt||item.name} loading={mode==='card'?'lazy':'eager'}/><span className="shop-visual-mark">HYDROID</span></div>;
+}
+
+function Detail({item,onAdd,onBuy}){
+ const [quantity,setQuantity]=useState(1);
+ const [view,setView]=useState('front');
+ const [pack,setPack]=useState(0);
+ const chosenPack=item.isPod?(item.packs?.[pack]||podsDefault.packs[0]):null;
+ const price=money(chosenPack?.price||item.price);
+ const cartId=item.isPod?`pods-${chosenPack.quantity}`:item.id;
+ return <div className="shop-detail">
+  <div className="shop-detail-media"><ProductVisual item={item} mode={view}/><div className="shop-thumbs" aria-label="Product views"><button className={view==='front'?'selected':''} onClick={()=>setView('front')} aria-pressed={view==='front'}><img src={item.image} alt=""/><span>Front</span></button><button className={view==='angle'?'selected':''} onClick={()=>setView('angle')} aria-pressed={view==='angle'}><img src={item.image} alt=""/><span>Angle</span></button><button className={view==='close'?'selected':''} onClick={()=>setView('close')} aria-pressed={view==='close'}><img src={item.image} alt=""/><span>Close-up</span></button></div></div>
+  <div className="shop-detail-copy"><a href="#shop" className="shop-back">← All products</a><span className="shop-overline">{item.kind} · Veids Ventures</span><h1>{item.name}</h1><p className="shop-detail-price">{chosenPack?.price||item.price}<span className="purchase-tag"><span className="pulse-dot"></span>Purchase Coming Soon</span></p><p className="shop-description">{item.description}</p><div className="shop-divider"/>{item.isPod?<div className="shop-pack"><span>CHOOSE YOUR PACK</span><div className="shop-pack-options">{(item.packs||podsDefault.packs).map((option,index)=><button key={option.label} className={pack===index?'selected':''} onClick={()=>setPack(index)} aria-pressed={pack===index}><strong>{option.label}</strong><small>{option.price}</small></button>)}</div></div>:<div className="shop-finish"><span>FINISH</span><strong>{item.finish||'As shown'}</strong></div>}<div className="shop-choice"><span>QUANTITY</span><div className="shop-stepper"><button onClick={()=>setQuantity(value=>Math.max(1,value-1))} aria-label="Decrease quantity">−</button><output aria-live="polite">{quantity}</output><button onClick={()=>setQuantity(value=>Math.min(99,value+1))} aria-label="Increase quantity">+</button></div></div><div className="coming-soon-pill">✦ Purchase Coming Soon · Online Ordering Opens Soon</div><div className="shop-purchase"><button className="shop-add" onClick={()=>onAdd(cartId,quantity)}>Add to bag · ₹{(price*quantity).toLocaleString('en-IN')}</button><button className="shop-buy" onClick={()=>onBuy(cartId,quantity)}>Buy now ↗</button></div><p className="shop-order-note">You can save items in your bag. Online payment and shipping are not available yet.</p><details className="shop-accordion"><summary>Product details <span>+</span></summary><p>{item.description}</p></details><details className="shop-accordion"><summary>Ordering information <span>+</span></summary><p>Checkout will open when payment, delivery, and availability details are confirmed.</p></details></div>
+ </div>;
+}
+
+export default function Shop({bottles,pods,onAdd,onBuy}){
+ const items=shopItems(bottles,pods);
+ const route=window.location.hash;
+ const id=route.startsWith('#shop/item/')?decodeURIComponent(route.slice('#shop/item/'.length)):null;
+ const item=items.find(entry=>entry.id===id);
+ return <div className="shop-page"><div className="shop-breadcrumb"><a href="#home">Home</a><span>›</span><a href="#shop">All products</a>{item&&<><span>›</span><span>{item.name}</span></>}</div>{item?<Detail key={item.id} item={item} onAdd={onAdd} onBuy={onBuy}/>:<><div className="shop-banner"><div><div className="section-pill-tag"><span className="pulse-dot"></span> Purchase Coming Soon · VIP Early Access</div><span className="shop-overline">HYDROID / THE COLLECTION</span><h1>Find your<br/>everyday.</h1><p>Two ways to carry Hydroid. A companion pod to explore.</p></div><div className="shop-banner-images"><img src={bottles[0]?.image} alt="Hydroid blue bottle"/><img src={bottles[1]?.image} alt="Hydroid clear bottle"/></div></div><div className="shop-list-head"><div><span className="shop-overline">EXPLORE HYDROID</span><h2>All products <sup>{items.length}</sup></h2></div><span className="purchase-tag"><span className="pulse-dot"></span> Purchase Coming Soon</span></div><div className="shop-grid">{items.map(entry=><article className="shop-card" key={entry.id}><a href={`#shop/item/${entry.id}`} aria-label={`View ${entry.name}`}><ProductVisual item={entry}/><div className="shop-card-info"><span>{entry.kind}</span><h3>{entry.name}</h3><p>{entry.isPod?`From ${(entry.packs||podsDefault.packs)[0]?.price||entry.price}`:entry.price}<span className="purchase-tag"><span className="pulse-dot"></span>Coming soon</span></p><small>{entry.isPod?'1 · 4 · 7 pack options':entry.finish}</small></div></a><button className="shop-card-add" onClick={()=>onAdd(entry.isPod?'pods-1':entry.id,1)} aria-label={`Add ${entry.name} to bag`}>Add to bag <span>↗</span></button></article>)}</div></>}</div>;
+}
